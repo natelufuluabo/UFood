@@ -1,5 +1,5 @@
 import { User } from '../repositories/user.js'
-import jwt from 'jwt-simple'
+import jwt from 'jsonwebtoken'
 
 export const isAuthenticated = async (req, res, next) => {
   const token = retrieveToken(req)
@@ -8,7 +8,7 @@ export const isAuthenticated = async (req, res, next) => {
     let decoded = null
 
     try {
-      decoded = jwt.decode(token, getTokenSecret())
+      decoded = jwt.verify(token, getTokenSecret())
     } catch (err) {
       return res.status(401).send({
         errorCode: 'ACCESS_DENIED',
@@ -16,11 +16,12 @@ export const isAuthenticated = async (req, res, next) => {
       })
     }
     try {
-      const user = await User.findOne({ _id: decoded.iss })
+      const user = await User.findById(decoded.id)
       if (user) {
         req.user = user
         return next()
       } else {
+        console.log('error finding user')
         return res.status(401).send({
           errorCode: 'ACCESS_DENIED',
           message: 'User associated with token was not found'

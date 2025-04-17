@@ -1,7 +1,7 @@
 import { Strategy as LocalStrategy } from 'passport-local'
 import { User } from '../repositories/user.js'
 import moment from 'moment'
-import jwt from 'jwt-simple'
+import jwt from 'jsonwebtoken'
 
 export const initializePassport = (passport, app) => {
   passport.serializeUser(function (user, done) {
@@ -34,12 +34,10 @@ export const initializePassport = (passport, app) => {
               return done(null, false)
             } else {
               const expires = moment().add(1, 'days').unix()
-              user.token = jwt.encode(
-                {
-                  iss: user.id,
-                  exp: expires
-                },
-                app.get('jwtTokenSecret')
+              user.token = jwt.sign(
+                { id: user.id, email: user.email },
+                process.env.TOKEN_SECRET || 'jwt-secret-token',
+                { expiresIn: expires }
               )
 
               try {

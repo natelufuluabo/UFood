@@ -4,6 +4,9 @@ import cookieParser from 'cookie-parser'
 import session from 'express-session'
 import cors from 'cors'
 import passport from 'passport'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 import mongoose from 'mongoose'
 console.log(process.env.DATABASE_URL)
@@ -11,7 +14,7 @@ const mongoUri = process.env.DATABASE_URL || 'mongodb://localhost:27017/ufood'
 mongoose.connect(mongoUri)
 
 import { getTokenSecret, isAuthenticated } from './middleware/authentication.js'
-import { getToken, logout } from './services/login.js'
+import { getToken, authenticateWithGoogle, logout } from './services/login.js'
 import { welcome } from './services/signup.js'
 import { allUsers, findUserById, follow, unfollow, findIfFollowed } from './services/users.js'
 import { getHome, getStatus } from './services/status.js'
@@ -78,6 +81,13 @@ app.use(function (error, req, res, next) {
 app.get('/', getHome)
 app.get('/status', getStatus)
 app.post('/login', passport.authenticate('local-login'), getToken)
+app.get('/login/google', (req, res) => {
+  const redirect_uri = `${process.env.FRONTEND_URL}/login/`
+  const scope = encodeURIComponent('openid email profile')
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${process.env.GOOGLE_CLIENT_ID}&redirect_uri=${redirect_uri}&scope=${scope}`
+  res.redirect(url)
+})
+app.post('/login/google/', authenticateWithGoogle)
 app.post('/logout', logout)
 
 app.post('/signup', passport.authenticate('local-signup'), getToken)
@@ -100,9 +110,9 @@ app.post('/follow', isAuthenticated, follow)
 app.delete('/follow/:id', isAuthenticated, unfollow)
 app.get('/follow/:id', isAuthenticated, findIfFollowed)
 
-app.get('/restaurants', isAuthenticated, allRestaurants)
-app.get('/restaurants/:id', isAuthenticated, findRestaurantById)
-app.get('/restaurants/:id/visits', isAuthenticated, allRestaurantVisits)
+app.get('/restaurants', allRestaurants)
+app.get('/restaurants/:id', findRestaurantById)
+app.get('/restaurants/:id/visits', allRestaurantVisits)
 
 app.get('/favorites', isAuthenticated, getFavoriteLists)
 app.get('/favorites/:id', isAuthenticated, findFavoriteListById)

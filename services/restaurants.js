@@ -117,7 +117,7 @@ export const allRestaurantVisits = async (req, res) => {
       total: count
     })
   } catch (err) {
-    console.error(err)
+    console.error(err.message)
     if (err.name === 'CastError') {
       returnNotFound(req, res)
     } else {
